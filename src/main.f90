@@ -144,10 +144,8 @@ yearloop: do yr = 1, calcyrs
                dayvars(day)%KBDI,&
                dayvars(day)%FFDI,&
                dayvars(day)%FFDI_cat,&
-               count(dayvars%FFDI_cat >= 3),&
                dayvars(day)%GFDI,&
-               dayvars(day)%GFDI_cat,&
-               count(dayvars%GFDI_cat >= 3)
+               dayvars(day)%GFDI_cat
 
       day = day + 1
 

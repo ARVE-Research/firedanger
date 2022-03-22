@@ -68,14 +68,14 @@ aprec = sum(monvars%pre(s:e))
 if (year == 1 .and. day == 1) then
 
   KBDI_0   = 0.
-  dryd     = 0.
+  dryd     = 0
   prec_acc = 0.
 
 end if
 
 !----------
 ! Calculation of the Keetch_Bryam Drought Index (KBDI)
-! Equations taken from Janis et al. (2002 Intl J. of Wildland Fire, 2002, 11, 281-289 http://climate.geog.udel.edu/~climate/publication_html/Pdf/JJF_IJWF_02.pdf
+! Find number of consecutive dry days
 
 if (prec > 0) then      ! if wet day
 
@@ -90,11 +90,12 @@ else
 end if
 
 !----------
+! Equations taken from Janis et al. (2002 Intl J. of Wildland Fire, 2002, 11, 281-289 http://climate.geog.udel.edu/~climate/publication_html/Pdf/JJF_IJWF_02.pdf
 
 DF = (800. - KBDI_0) * (0.968 * exp(0.0875 * tmax + 1.5552) - 8.30) * 1.e-3  &
       / (1. + 10.88 * exp(-1.74e-3 * aprec))
 
-!----------
+! ----------
 
 if (prec == 0. .and. tmax <= 6.78) then
 
@@ -104,14 +105,11 @@ else if  (prec == 0. .and. tmax > 6.78) then
 
   KBDI = KBDI_0 + DF
 
-else if (prec > 0 .and. prec_acc < 5.1) then
+else if (prec > 0 .and. prec_acc <= 5.1) then
 
   KBDI = KBDI_0 + DF
 
-else if (prec > 0 .and. prec_acc >= 5.1) then
-
-  DF = (800. - KBDI_0 + 3.937 * prec_acc) * (0.968 * exp(0.0875 * tmax + 1.5552) - 8.30) * 1.e-3  &
-        / (1. + 10.88 * exp(-1.74e-3 * aprec))
+else if (prec > 0 .and. prec_acc > 5.1) then
 
   KBDI = KBDI_0 - 3.937 * prec_acc + DF
 
@@ -120,18 +118,18 @@ else if (prec > 0 .and. prec_acc >= 5.1) then
 end if
 
 !----------
+! Alternative KBDI equations corrected for SI units for drought factor (DF) taken from Alexander (1990) http://people.atmos.ucla.edu/ycao/papers/Computer%20Calculation%20of%20the%20Keetch-Byram%20Drought%20Index-Programmers%20Beware!.pdf
+! Also can reference this link: https://wikifire.wsl.ch/tiki-indexa61f.html?page=Keetch-Byram+drought+index&structure=Fire
+! Deactiavted for now because of uncertainties in equations
+
+! Qsi = KBDI_0 - prec
+! KBDI = Qsi + (((203.2 - Qsi) * (0.968 * exp((0.0875 * tmean) + 1.5552) - 8.3) * 1.* 0.01) / (1. + (10.88 * exp(-0.001736 * aprec))))
+
+!----------
 
 KBDI = max(0., KBDI)
 
 KBDI_0 = KBDI        ! Save current KBDI for calculation of next time-step
-
-!----------
-! Here I implemented the KBDI equations from Yui Wang's code (equation source?)
-! Seems less complicated and similar to what I have above
-
-Qsi = KBDI_0 - prec
-
-KBDI = Qsi + (((203.2 - Qsi) * (0.968 * exp((0.0875 * tmean) + 1.5552) - 8.3) * 1.* 0.01) / (1. + (10.88 * exp(-0.001736 * aprec))))
 
 !----------
 ! Calculation of Forest Fire Danger Index
@@ -139,9 +137,9 @@ KBDI = Qsi + (((203.2 - Qsi) * (0.968 * exp((0.0875 * tmean) + 1.5552) - 8.3) * 
 
 wind = wind * 3.6         ! Convert to km h-1
 
-DF = 0.191 * (KBDI + 104.) * (dryd + 1) ** 1.5 / (3.52 * (dryd + 1) ** 1.5 + prec - 1.)
+DF = (0.191 * (KBDI + 104.) * (real(dryd + 1) ** 1.5)) / (3.52 * real(dryd + 1) ** 1.5 + prec - 1.)
 
-FFDI = 2.0 * exp(-4.50 + 0.987 * log(DF) - 0.0345 * rhum + 0.0338 * tmean + 0.0234 * wind)
+FFDI = 2.0 * exp(-0.45 + 0.987 * log(DF) - 0.0345 * rhum + 0.0338 * tmean + 0.0234 * wind)
 
 ! FFDI = 1.25 * DF * exp((tmean - rhum) / 30.0 + 0.0234 * wind)       ! Simplified euqation from Noble et al.
 

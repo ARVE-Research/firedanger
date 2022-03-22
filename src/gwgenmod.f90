@@ -15,7 +15,7 @@ use statevarsmod,  only : monvars,dayvars
 use errormod,      only : ncstat,netcdf_err
 use geohashmod,    only : geohash
 use randomdistmod,
-use newsplinemod,  only : newspline_all
+use newsplinemod,  only : newspline
 use weathergenmod, only : metvars_in,metvars_out,weathergen,roundto
 use netcdf
 
@@ -78,6 +78,11 @@ real(sp), dimension(wbuf) :: tmin_sm     ! smoothed pseudo-daily values of min t
 real(sp), dimension(wbuf) :: tmax_sm     ! smoothed pseudo-daily values of max temperature
 real(sp), dimension(wbuf) :: cld_sm      ! smoothed pseudo-daily values of cloudiness
 real(sp), dimension(wbuf) :: wnd_sm      ! smoothed pseudo-daily values of wind speed
+
+real(sp), dimension(2) :: bcond_tmin
+real(sp), dimension(2) :: bcond_tmax
+real(sp), dimension(2) :: bcond_cld
+real(sp), dimension(2) :: bcond_wnd
 
 ! quality control variables
 
@@ -205,10 +210,15 @@ monthloop : do m = 1, 12
 
   ! generate pseudo-daily smoothed meteorological variables (using means-preserving algorithm)
 
-  call newspline_all(mtminbuf,ndbuf,tmin_sm(1:sum(ndbuf)))
-  call newspline_all(mtmaxbuf,ndbuf,tmax_sm(1:sum(ndbuf)))
-  call newspline_all(cldbuf,ndbuf,cld_sm(1:sum(ndbuf)))
-  call newspline_all(wndbuf,ndbuf,wnd_sm(1:sum(ndbuf)))
+  bcond_tmin = [mtminbuf(-w),mtminbuf(w)]
+  bcond_tmax = [mtmaxbuf(-w),mtmaxbuf(w)]
+  bcond_cld  = [cldbuf(-w),cldbuf(w)]
+  bcond_wnd  = [wndbuf(-w),wndbuf(w)]
+
+  call newspline(mtminbuf,ndbuf,bcond_tmin,tmin_sm(1:sum(ndbuf)))
+  call newspline(mtmaxbuf,ndbuf,bcond_tmax,tmax_sm(1:sum(ndbuf)))
+  call newspline(cldbuf,ndbuf,bcond_cld,cld_sm(1:sum(ndbuf)),llim=0.,ulim=1.)
+  call newspline(wndbuf,ndbuf,bcond_wnd,wnd_sm(1:sum(ndbuf)),llim=0.)
 
   where (tmin_sm > tmax_sm)
     tmax_sm = tmin_sm + 0.1
